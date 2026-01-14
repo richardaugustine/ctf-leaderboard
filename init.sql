@@ -1,15 +1,19 @@
-CREATE TABLE IF NOT EXISTS teams (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(100) UNIQUE NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS flags (
-    id SERIAL PRIMARY KEY,
-    team_id INTEGER REFERENCES teams(id) ON DELETE CASCADE,
-    challenge VARCHAR(100) NOT NULL,
-    flag VARCHAR(255) NOT NULL,
-    points INTEGER NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(team_id, challenge)
+CREATE TABLE IF NOT EXISTS submissions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL,
+    flag TEXT NOT NULL,
+    points INTEGER DEFAULT 100,
+    submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(username, flag)
 );
+
+INSERT OR IGNORE INTO users (username, password) VALUES 
+('admin', 'admin123'),
+('test', 'test123');
