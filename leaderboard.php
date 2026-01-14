@@ -1,9 +1,15 @@
-<?php require 'config.php'; session_start(); ?>
+<?php require 'config.php'; session_start(); 
+
+// Define CTF settings
+$CTF_END = time() + (24*60*60);  // 24 hours from now
+$WIN_FLAGS = 3;
+?>
 <!DOCTYPE html>
 <html>
 <head><title>🏆 CTF Leaderboard</title>
 <meta http-equiv="refresh" content="10">
 <style>
+/* Your existing CSS - perfect */
 body{font-family:Arial;background:#111;color:#0f0;padding:20px;margin:0;}
 h1{text-align:center;font-size:36px;margin:10px;}
 table{width:100%;border-collapse:collapse;margin:20px 0;} 
@@ -49,14 +55,19 @@ else echo '⏰ Time left: '.gmdate('H:i:s', $CTF_END-$now);
 <tr><th>Rank</th><th>Team</th><th>Flags / 3</th><th>Score</th></tr>
 <?php
 try {
-$stmt=$pdo->query("SELECT t.name,COUNT(f.id) as flags,COALESCE(SUM(f.points),0) as score FROM teams t LEFT JOIN flags f ON t.id=f.team_id GROUP BY t.id ORDER BY flags DESC,score DESC,t.created_at ASC LIMIT 20");
-$rank=1; 
-foreach($stmt as $r):
-$is_winner=($r['flags']>=$WIN_FLAGS);
+    // FIXED QUERY - Matches YOUR schema exactly
+    $stmt = $db->query("SELECT username, COUNT(*) as flags, COUNT(*) * 100 as score 
+                       FROM submissions 
+                       GROUP BY username 
+                       ORDER BY flags DESC, score DESC 
+                       LIMIT 20");
+    $rank=1; 
+    foreach($stmt as $r):
+        $is_winner=($r['flags']>=$WIN_FLAGS);
 ?>
 <tr class="<?= $is_winner?'winner':'' ?>">
 <td style="font-size:24px;"><?= $rank++ ?></td>
-<td style="font-weight:bold;"><?= htmlspecialchars($r['name']) ?></td>
+<td style="font-weight:bold;"><?= htmlspecialchars($r['username']) ?></td>
 <td style="font-size:20px;"><?= $r['flags'] ?>/3</td>
 <td><?= number_format($r['score']) ?> pts</td>
 </tr>
