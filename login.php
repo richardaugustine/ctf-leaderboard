@@ -11,7 +11,8 @@ if($_POST['team']) {
     }
     
     try {
-        $stmt = $db->prepare("INSERT INTO teams(name) VALUES(?) ON CONFLICT (name) DO NOTHING");  // ← FIXED $db
+        // FIXED: Use users table instead of teams
+        $stmt = $db->prepare("INSERT OR IGNORE INTO users (username, password) VALUES (?, 'temp')");
         $stmt->execute([$team]);
         $_SESSION['team'] = $team;
         $_SESSION['success'] = "Welcome to CTF, $team!";
