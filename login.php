@@ -11,7 +11,7 @@ if($_POST['team']) {
     }
     
     try {
-        $stmt = $pdo->prepare("INSERT INTO teams(name) VALUES(?) ON CONFLICT (name) DO NOTHING");
+        $stmt = $db->prepare("INSERT INTO teams(name) VALUES(?) ON CONFLICT (name) DO NOTHING");  // ← FIXED $db
         $stmt->execute([$team]);
         $_SESSION['team'] = $team;
         $_SESSION['success'] = "Welcome to CTF, $team!";
