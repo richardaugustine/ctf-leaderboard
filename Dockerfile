@@ -1,14 +1,19 @@
-# Start with the official PHP Apache image
-FROM php:8.3-apache
+FROM php:8.2-apache
 
-# 1. NEW STEP: Install system dependencies for PostgreSQL
-# First, update the list of available packages, then install the
-# 'libpq-dev' package, which contains the required 'libpq-fe.h' file.
-RUN apt-get update && apt-get install -y libpq-dev
+# Install PostgreSQL extension for Supabase
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    && docker-php-ext-install pdo pdo_pgsql
 
-# 2. NOW, install the PHP extensions
-# This command will now succeed because the dependencies are installed.
-RUN docker-php-ext-install pdo pdo_pgsql
+# Enable Apache mod_rewrite (if needed)
+RUN a2enmod rewrite
 
-# 3. Copy your application code into the server's public directory
+# Copy all files (your original + our leaderboard)
 COPY . /var/www/html/
+
+# Fix permissions
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html
+
+EXPOSE 8080
+CMD ["apache2-foreground"]
