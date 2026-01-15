@@ -8,7 +8,8 @@ if(!isset($_SESSION['team'])) {
 }
 
 $message = '';
-if($_POST['challenge'] && $_POST['flag']) {
+// FIXED: Check if form was submitted first
+if(isset($_POST['challenge']) && isset($_POST['flag']) && $_POST['challenge'] && $_POST['flag']) {
     $challenge = trim($_POST['challenge']);
     $flag = trim($_POST['flag']);
     $team_name = $_SESSION['team'];
@@ -58,10 +59,10 @@ if($_POST['challenge'] && $_POST['flag']) {
 
 <form method="POST">
 <label>Challenge ID:</label>
-<input type="text" name="challenge" placeholder="challenge1" required maxlength="20" value="<?= $_POST['challenge'] ?? '' ?>">
+<input type="text" name="challenge" placeholder="challenge1" required maxlength="20" value="<?= htmlspecialchars($_POST['challenge'] ?? '') ?>">
 
 <label>Flag:</label>
-<input type="text" name="flag" placeholder="flag{xxxxxxxx}" required maxlength="100" value="<?= $_POST['flag'] ?? '' ?>">
+<input type="text" name="flag" placeholder="flag{xxxxxxxx}" required maxlength="100" value="<?= htmlspecialchars($_POST['flag'] ?? '') ?>">
 
 <button class="btn">🚀 Submit Flag</button>
 </form>
