@@ -1,23 +1,19 @@
 <?php
-require 'config.php'; 
+require 'config.php';
 session_start();
 
 if($_POST['team']) {
-    $team = trim($_POST['team']);
-    if(strlen($team) < 2 || strlen($team) > 20) {
-        $_SESSION['error'] = "Team name must be 2-20 characters";
-        header('Location: leaderboard.php');
-        exit;
-    }
+    $team_name = trim($_POST['team']);
     
     try {
-        // FIXED: Use users table instead of teams
-        $stmt = $db->prepare("INSERT OR IGNORE INTO users (username, password) VALUES (?, 'temp')");
-        $stmt->execute([$team]);
-        $_SESSION['team'] = $team;
-        $_SESSION['success'] = "Welcome to CTF, $team!";
-    } catch(Exception $e) {
-        $_SESSION['error'] = "Error joining. Try different team name.";
+        $stmt = $db->prepare("INSERT INTO users (username) VALUES (?)");
+        $stmt->execute([$team_name]);
+        $_SESSION['team'] = $team_name;
+        $_SESSION['success'] = "Welcome to CTF, {$team_name}! 🎉";
+        header('Location: leaderboard.php');
+        exit;
+    } catch(PDOException $e) {
+        $_SESSION['error'] = "❌ Team '$team_name' already exists! Choose another name.";
     }
 }
 
