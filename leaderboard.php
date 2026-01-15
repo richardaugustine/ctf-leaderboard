@@ -1,84 +1,90 @@
-<?php require 'config.php'; session_start(); 
+<?php
+require 'config.php';
+session_start();
 
-// Define CTF settings
-$CTF_END = time() + (24*60*60);  // 24 hours from now
-$WIN_FLAGS = 3;
+$success = $_SESSION['success'] ?? '';
+$error = $_SESSION['error'] ?? '';
+unset($_SESSION['success'], $_SESSION['error']);
 ?>
 <!DOCTYPE html>
 <html>
-<head><title>🏆 CTF Leaderboard</title>
-<meta http-equiv="refresh" content="10">
-<style>
-/* Your existing CSS - perfect */
-body{font-family:Arial;background:#111;color:#0f0;padding:20px;margin:0;}
-h1{text-align:center;font-size:36px;margin:10px;}
-table{width:100%;border-collapse:collapse;margin:20px 0;} 
-th,td{padding:15px;border:1px solid #333;text-align:center;}
-th{background:#222;font-size:18px;}
-.winner{background:#0f0 !important;color:#000;font-size:24px;font-weight:bold;}
-.timer{font-size:32px;color:#ff0;text-align:center;padding:20px;background:#222;margin:20px 0;border-radius:10px;}
-.login{position:absolute;top:20px;right:20px;background:#222;padding:20px;border-radius:10px;max-width:300px;}
-.login input{padding:12px;width:100%;margin:8px 0;box-sizing:border-box;font-size:16px;}
-.btn{padding:12px 24px;background:#0a0;color:#fff;border:none;font-size:16px;cursor:pointer;border-radius:5px;}
-.team-info{background:#222;padding:20px;border-radius:10px;margin:10px 0;text-align:center;}
-</style></head>
+<head>
+    <title>🏆 CTF Leaderboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
 <body>
-<h1>🏆 LIVE CTF LEADERBOARD</h1>
+    <div class="container">
+        <?php if(isset($_SESSION['team'])): ?>
+            <nav>
+                <a href="submit.php" class="nav-btn">📝 Submit Flag</a>
+                <a href="logout.php" class="nav-btn">🚪 Logout</a>
+            </nav>
+            <h1>👋 <?= $_SESSION['team'] ?> Team</h1>
+        <?php else: ?>
+            <h1>🏆 Live CTF Leaderboard</h1>
+        <?php endif; ?>
 
-<div class="timer">
-<?php 
-$now=time(); 
-if($now>$CTF_END) echo '🏁 EVENT FINISHED - CHECK WINNERS!';
-else echo '⏰ Time left: '.gmdate('H:i:s', $CTF_END-$now);
-?>
-</div>
+        <?php if($success): ?>
+            <div class="success"><?= $success ?></div>
+        <?php endif; ?>
+        <?php if($error): ?>
+            <div class="error"><?= $error ?></div>
+        <?php endif; ?>
 
-<?php if(!isset($_SESSION['team'])): ?>
-<div class="login">
-<h2 style="margin-top:0;">👥 Join CTF</h2>
-<form method="POST" action="login.php">
-<input type="text" name="team" placeholder="Team Name" required maxlength="20">
-<button class="btn" style="width:100%;">🚀 Join Now</button>
-</form>
-<p style="font-size:12px;color:#888;margin-top:10px;">First to 3 flags wins 🏆</p>
-</div>
-<?php else: ?>
-<div class="team-info">
-👋 <strong style="color:#ff0;"><?= $_SESSION['team'] ?></strong> | 
-<a href="submit.php" style="color:#ff0;">📝 Submit Flag</a> | 
-<a href="logout.php" style="color:#ff0;">🚪 Logout</a>
-</div>
-<?php endif; ?>
+        <?php if(!isset($_SESSION['team'])): ?>
+            <form method="POST" action="login.php" class="form-group">
+                <h2>Join CTF</h2>
+                <input type="text" name="team" placeholder="Enter Team Name" required maxlength="50">
+                <button class="btn">🚀 Join CTF</button>
+            </form>
+        <?php endif; ?>
 
-<h2 style="text-align:center;">🏅 TOP TEAMS</h2>
-<table>
-<tr><th>Rank</th><th>Team</th><th>Flags / 3</th><th>Score</th></tr>
-<?php
-try {
-    // FIXED QUERY - Matches YOUR schema exactly
-    $stmt = $db->query("SELECT username, COUNT(*) as flags, COUNT(*) * 100 as score 
-                       FROM submissions 
-                       GROUP BY username 
-                       ORDER BY flags DESC, score DESC 
-                       LIMIT 20");
-    $rank=1; 
-    foreach($stmt as $r):
-        $is_winner=($r['flags']>=$WIN_FLAGS);
-?>
-<tr class="<?= $is_winner?'winner':'' ?>">
-<td style="font-size:24px;"><?= $rank++ ?></td>
-<td style="font-weight:bold;"><?= htmlspecialchars($r['username']) ?></td>
-<td style="font-size:20px;"><?= $r['flags'] ?>/3</td>
-<td><?= number_format($r['score']) ?> pts</td>
-</tr>
-<?php endforeach; 
-} catch(Exception $e) { 
-echo "<tr><td colspan=4 style='color:#f66;'>🔄 Database connecting... please wait (first load)</td></tr>"; 
-}
-?>
-</table>
+        <table class="leaderboard-table">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Team</th>
+                    <th>Flags</th>
+                    <th>Points</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
+                $stmt = $db->query("
+                    SELECT username, 
+                           COUNT(flag) as flags_count,
+                           SUM(points) as total_points,
+                           ROW_NUMBER() OVER (ORDER BY SUM(points) DESC, COUNT(flag) DESC) as rank
+                    FROM submissions 
+                    GROUP BY username 
+                    ORDER BY total_points DESC, flags_count DESC
+                    LIMIT 50
+                ");
+                while($row = $stmt->fetch(PDO::FETCH_ASSOC)):
+                ?>
+                <tr>
+                    <td>#<?= $row['rank'] ?></td>
+                    <td><?= htmlspecialchars($row['username']) ?></td>
+                    <td><?= $row['flags_count'] ?>/3</td>
+                    <td><?= $row['total_points'] ?> pts</td>
+                </tr>
+                <?php endwhile; ?>
+            </tbody>
+        </table>
+    </div>
 
-<div style="text-align:center;color:#888;margin-top:30px;font-size:14px;">
-🔄 Auto-refresh every 10 seconds • <?= date('H:i:s T') ?> • Public CTF Leaderboard
-</div>
-</body></html>
+    <script>
+        // Mouse trail particles
+        document.addEventListener('mousemove', (e) => {
+            const particle = document.createElement('div');
+            particle.className = 'trail-particle';
+            particle.style.left = e.clientX + 'px';
+            particle.style.top = e.clientY + 'px';
+            particle.style.setProperty('--drift-x', (Math.random() - 0.5) * 20 + 'px');
+            particle.style.setProperty('--drift-y', (Math.random() - 0.5) * 20 + 'px');
+            document.body.appendChild(particle);
+            setTimeout(() => particle.remove(), 500);
+        });
+    </script>
+</body>
+</html>
